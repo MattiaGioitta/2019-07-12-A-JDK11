@@ -5,9 +5,12 @@
 package it.polito.tdp.food;
 
 import java.net.URL;
+import java.util.List;
 import java.util.ResourceBundle;
 
+import it.polito.tdp.food.model.Food;
 import it.polito.tdp.food.model.Model;
+import it.polito.tdp.food.model.Vicino;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -41,7 +44,7 @@ public class FoodController {
     private Button btnSimula; // Value injected by FXMLLoader
 
     @FXML // fx:id="boxFood"
-    private ComboBox<?> boxFood; // Value injected by FXMLLoader
+    private ComboBox<Food> boxFood; // Value injected by FXMLLoader
 
     @FXML // fx:id="txtResult"
     private TextArea txtResult; // Value injected by FXMLLoader
@@ -49,13 +52,31 @@ public class FoodController {
     @FXML
     void doCreaGrafo(ActionEvent event) {
     	txtResult.clear();
-    	txtResult.appendText("Creazione grafo...");
+    	Integer numPortion;
+    	try {
+    		numPortion = Integer.parseInt(this.txtPorzioni.getText());
+    	}catch(NumberFormatException e) {
+    		this.txtResult.appendText("Inserisci un numero porzioni in formato corretto!");
+    		return;
+    	}
+    	this.model.createGraph(numPortion);
+    	this.boxFood.getItems().addAll(this.model.getFoods());
+    	
+    	
     }
     
     @FXML
     void doCalorie(ActionEvent event) {
     	txtResult.clear();
-    	txtResult.appendText("Analisi calorie...");
+    	Food f = this.boxFood.getValue();
+    	if(f == null) {
+    		this.txtResult.setText("Scegli un cibo!");
+    		return;
+    	}
+    	List<Vicino> vicini = this.model.getVicino(f);
+    	for(Vicino v : vicini) {
+    		this.txtResult.appendText(v.toString()+"\n");
+    	}
     }
 
     @FXML

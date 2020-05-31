@@ -6,26 +6,26 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
+import it.polito.tdp.food.model.Adiacenze;
 import it.polito.tdp.food.model.Condiment;
 import it.polito.tdp.food.model.Food;
 import it.polito.tdp.food.model.Portion;
 
 public class FoodDao {
-	public List<Food> listAllFoods(){
+	public void listAllFoods(Map<Integer, Food> idMap){
 		String sql = "SELECT * FROM food" ;
 		try {
 			Connection conn = DBConnect.getConnection() ;
 
 			PreparedStatement st = conn.prepareStatement(sql) ;
 			
-			List<Food> list = new ArrayList<>() ;
-			
 			ResultSet res = st.executeQuery() ;
 			
 			while(res.next()) {
 				try {
-					list.add(new Food(res.getInt("food_code"),
+					idMap.put(res.getInt("food_code"),new Food(res.getInt("food_code"),
 							res.getString("display_name")
 							));
 				} catch (Throwable t) {
@@ -34,11 +34,11 @@ public class FoodDao {
 			}
 			
 			conn.close();
-			return list ;
+			
 
 		} catch (SQLException e) {
 			e.printStackTrace();
-			return null ;
+			
 		}
 
 	}
@@ -108,5 +108,71 @@ public class FoodDao {
 			return null ;
 		}
 
+	}
+
+	public List<Food> getAllFoods(Map<Integer, Food> idMap, Integer portionNum) {
+		String sql = "SELECT food_code " + 
+				"FROM `portion` " + 
+				"GROUP BY food_code " + 
+				"HAVING COUNT(DISTINCT(portion_id))=?" ;
+		List<Food> foods = new ArrayList<>();
+		try {
+			Connection conn = DBConnect.getConnection() ;
+
+			PreparedStatement st = conn.prepareStatement(sql) ;
+			
+		    st.setInt(1, portionNum);
+			
+			ResultSet res = st.executeQuery() ;
+			
+			while(res.next()) {
+				try {
+					foods.add(idMap.get(res.getInt("food_code")));
+				} catch (Throwable t) {
+					t.printStackTrace();
+				}
+			}
+			
+			conn.close();
+			return foods;
+
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return null;
+		}
+
+	
+		
+	}
+
+	public List<Adiacenze> getAdiacenze(Map<Integer,Food> idMap, List<Food> allFoods) {
+		final String sql ="SELECT fc1.food_code AS f1,fc2.food_code AS f2, AVG(c.condiment_calories) AS peso " + 
+				"FROM food_condiment AS fc1,food_condiment AS fc2, " + 
+				"condiment AS c " + 
+				"WHERE fc1.condiment_code=fc2.condiment_code " + 
+				"AND c.condiment_code=fc1.condiment_code " + 
+				"AND fc1.id<>fc2.id " + 
+				"AND fc1.food_code<>fc2.food_code "+
+				"GROUP BY fc1.food_code,fc2.food_code";
+		List<Adiacenze> adiacenze = new ArrayList<>();
+		try {
+			Connection conn = DBConnect.getConnection();
+			PreparedStatement st = conn.prepareStatement(sql);			
+			ResultSet res = st.executeQuery() ;
+			while(res.next()) {
+				Adiacenze a = new Adiacenze(idMap.get(res.getInt("f1")),idMap.get(res.getInt("f2")),res.getDouble("peso"));
+				if(allFoods.contains(a.getF1()) && allFoods.contains(a.getF2())) {
+					adiacenze.add(a);
+				}			
+				
+			}
+			conn.close();
+			return adiacenze;
+		}catch(SQLException e) {
+			e.printStackTrace();
+			System.out.println("Errore nel database");
+			return null;
+		}
+		
 	}
 }
