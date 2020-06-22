@@ -53,6 +53,7 @@ public class Model {
 			if(!list.contains(this.graph.getEdgeTarget(f)))
 				list.add(this.graph.getEdgeTarget(f));
 		}
+		Collections.sort(list);
 		return list;
 	}
 	public List<Vicino> getVicino(Food f){
